@@ -1,0 +1,354 @@
+---
+title: "Olympics"
+author: "Nitish Ghosal"
+date: "January 22, 2018"
+output: html_document
+---
+
+
+<h1><center> SUMMER OLYMPICS 1896-2012 </center></h1>
+<h4><center> The Biggest Sporting Extravaganza of the World</center></h4>
+![](https://cdn.colorlib.com/wp/wp-content/uploads/sites/2/2014/02/Olympic-logo.png)
+
+<br>
+
+<h4> History and facts about Olympics </h4>
+
+* The Olympic Games, which originated in ancient Greece as many as 3,000 years ago, were revived in the late 19th century and have become the world's preeminent sporting competition. 
+* The first written records of the ancient Olympic Games date to 776 B.C.
+*  The ancient Olympics were held every four years between August 6 and September 19 during a religious festival honoring Zeus.
+* After the Roman Empire conquered Greece in the mid-2nd century B.C., the Games continued, but their standards and quality declined. 
+* In A.D. 393, Emperor Theodosius I, a Christian, called for a ban on all "pagan" festivals, ending the ancient Olympic tradition after nearly 12 centuries.
+* It would be another 1,500 years before the Games would rise again, largely thanks to the efforts of <b>Baron Pierre de Coubertin (1863-1937) of France</b>. 
+* The first modern Olympics were held in Athens, Greece, in 1896. In the opening ceremony, King Georgios I and a crowd of 60,000 spectators welcomed 280 participants from 13 nations (all male), who would compete in 43 events, including track and field, gymnastics, swimming, wrestling, cycling, tennis, weightlifting, shooting and fencing. All subsequent Olympiads have been numbered even when no Games take place (as in 1916, during World War I, and in 1940 and 1944, during World War II). 
+* The Olympics truly took off as an international sporting event after 1924, when the VIII Games were held in Paris. Some 3,000 athletes (with more than 100 women among them) from 44 nations competed that year, and for the first time the Games featured a closing ceremony.
+* Eighty years later, when the 2004 Summer Olympics returned to Athens for the first time in more than a century, nearly 11,000 athletes from a record 201 countries competed.
+
+<br>
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, fig.width = 8, fig.height = 6, fig.align = "center")
+
+library(highcharter)
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+library(viridis)
+library(plotly)
+library("viridisLite")
+library(countrycode)
+
+data(worldgeojson, package = "highcharter")
+url<-"https://raw.githubusercontent.com/nitishghosal/Olympics-EDA/master/summer.csv"
+
+summer <- as_data_frame(read.csv(url,stringsAsFactors = FALSE))
+
+by_year <- summer %>% group_by(Year) %>% summarise(Total = n())
+by_city <- summer %>% group_by(City) %>% summarise(Total = n())
+by_sport <- summer %>% group_by(Sport) %>% summarise(Total = n())
+by_discipline <- summer %>% group_by(Discipline) %>% summarise(Total = n())
+by_athlete <- summer %>% group_by(Athlete) %>% summarise(Total = n()) %>% arrange(desc(Total)) %>% head(10)
+by_country <- summer %>% group_by(Country) %>% summarise(Total = n())
+by_gender <- summer %>% group_by(Gender) %>% summarise(Total = n())
+by_event <- summer %>% group_by(Event) %>% summarise(Total = n())
+by_medal <- summer %>% group_by(Medal) %>% summarise(Total = n())
+
+```
+
+<h4>As part this analysis I am exploring Summer Olympics medals data and would like to understand:</h4>
+
+* Which Olympics had the most medals won?
+* Which cities have hosted the games more than once?
+* Which countries have won the most medals at the Summer Olympic games?
+* Which athletes have won the most medals at the Summer Olympic games?
+* Top 10 medal winning athletes
+
+```{r}
+
+hchart(by_year, "column", hcaes(Year, Total, color = Year)) %>% 
+  hc_add_series_labels_values(by_medal$Medal, by_medal$Total,
+                              colors = substr(terrain.colors(3), 0 , 7), type = "pie",
+                              center = c('60%', '25%'),
+                              size = 150, dataLabels = list(enabled = TRUE)) %>%
+  hc_add_theme(hc_theme_google()) %>%
+  hc_credits(enabled = TRUE, text = "Sources: IOC Research and Reference Service and published by The Guardian's Datablog", style = list(fontSize = "10px")) %>%
+  hc_title(text = "Medals Won in Summer Olympics (1896 - 2012)")  %>%
+  hc_subtitle(text = "Pie chart shows number of different medals won")
+
+```
+
+<br>
+
+* There is increase in number of medals won from 1896 Olympics to 2012 Summer olympics.
+* One of the reasons will definitely be increase in participating countries, more sports and also number of athletes.
+
+<br>
+
+
+```{r}
+
+city_hosted<- summer %>% group_by(Year, City) %>% summarise(Total = n()) %>% group_by(City) %>% summarise(Total = n())
+
+by_city$Times <- city_hosted$Total
+
+
+hchart(by_city, "column", hcaes(City, Total, color = City)) %>% 
+  hc_add_series_labels_values(by_city$City, by_city$Times,
+                              colors = substr(terrain.colors(22), 0 , 7), type = "pie",
+                              center = c('70%', '25%'),
+                              size = 150, dataLabels = list(enabled = TRUE)) %>%
+  hc_add_theme(hc_theme_google()) %>%
+  hc_credits(enabled = TRUE, text = "Sources: IOC Research and Reference Service and published by The Guardian's Datablog", style = list(fontSize = "10px")) %>%
+  hc_title(text = "Medals Won in Summer Olympics (1896 - 2012) - By Cities") %>%
+  hc_subtitle(text = "Pie chart shows number of times each city hosted the games")
+
+```
+
+<br>
+
+* Athletes have won more medals in London.
+* Only 4 cities have hosted more than once.
+* London is the only city to have hosted 3 times.
+* Los Angeles, Paris and Athens have hosted twice.
+
+<br>
+
+
+```{r}
+
+countries <- summer %>% group_by(Year, Country) %>% summarise(Total =n()) %>% group_by(Country) %>% summarise(Total = n()) %>% arrange(desc(Total))
+
+hchart(by_country, "column", hcaes(Country, Total, color = Country)) %>% 
+  hc_add_series_labels_values(countries$Country, countries$Total,
+                              colors = substr(terrain.colors(148), 0 , 7), type = "pie",
+                              center = c('50%', '35%'),
+                              size = 200, dataLabels = list(enabled = TRUE)) %>% 
+  hc_add_theme(hc_theme_google()) %>%
+  hc_credits(enabled = TRUE, text = "Sources: IOC Research and Reference Service and published by The Guardian's Datablog", style = list(fontSize = "10px")) %>%
+  hc_title(text = "Medals Won in Summer Olympics (1896 - 2012) - By Country") %>%
+  hc_subtitle(text = "Pie chart shows number of times Countries have WON the medals at the games")
+
+```
+
+<br>
+
+* Great Britain has won medals in all the games from 1896-2012
+* USA is by far the most highest medal winner
+* Followed by URS and GBR which is Soviet Union and Great Britain
+* Only handful number of countries have won in majority of Olympics.
+
+<br>
+
+
+```{r}
+
+countries <- by_country
+names(countries) <- c("iso3", "total")
+
+dshmstops <- data.frame(q = c(0, exp(1:5)/exp(5)),
+                        c = substring(viridis(5 + 1, option = "D"), 0, 7)) %>%  list_parse2()
+
+highchart() %>% 
+  hc_add_series_map(worldgeojson, countries, value = "total", joinBy = "iso3") %>% 
+  hc_colorAxis(stops = dshmstops) %>% 
+  hc_legend(enabled = TRUE) %>% 
+  hc_add_theme(hc_theme_db()) %>% 
+  hc_mapNavigation(enabled = TRUE) %>%
+  hc_title(text = "Winners of Summer Olympic Medals (1896-2012)") %>%
+  hc_add_theme(hc_theme_google()) %>%
+  hc_credits(enabled = TRUE, text = "Sources: IOC Research and Reference Service and published by The Guardian's Datablog", style = list(fontSize = "10px")) 
+
+
+```
+
+<br>
+
+* One thing clearly stands out in the map is richest and developed countries have won the highest number of medals
+* They are still winning majority of the medals.
+
+<br>
+
+
+```{r}
+
+top_country <- countries <- summer %>% group_by(Year, Country) %>% summarise(Total = n()) %>% arrange(desc(Total)) %>% top_n(1) %>% group_by(Country) %>% summarise(Total = n())
+top_country$Country <- factor(top_country$Country)
+
+hchart(top_country, "treemap", hcaes(x = Country, value = Total, color = Total)) %>%
+  hc_colorAxis(stops = color_stops(n = 10, colors = c("#440154", "#21908C", "#FDE725"))) %>%
+  hc_title(text = "Countries Finishing First in Medals - Summer Olympics (1896-2012)") %>%
+  hc_add_theme(hc_theme_google()) %>%
+  hc_credits(enabled = TRUE, text = "Sources: IOC Research and Reference Service and published by The Guardian's Datablog", style = list(fontSize = "10px")) 
+
+```
+
+<br>
+
+* America has finished 1st in 14 games
+* Second best country is old Soviet Union which is not existing anymore
+* Rest all are the richest European countries.
+
+<br>
+
+##### Team USA - Facts on funding and building the team
+
+* The U.S. Olympic Committee, unlike its competitors around the world, does not receive funding from the federal government for its Olympic programs. 
+* Instead, Team USA athletes rely on the generosity of the American people to achieve their dreams.
+* Every year, the United States Olympic Committee gives out about $50 million to more than 40 national sport federations to help athletes in their medal quests.
+* Teams that medal the most get a lot of money
+* High-profile sports with few medal opportunities also get big dollars
+* Last year gymnastics, shooting, and bobsled all received more than double the funding they got in 1999, a growth that's come in step with better performance.
+* When a sport struggles, it gets less
+
+```{r}
+
+usa <- summer[summer$Country=="USA",]
+usa$Country <- factor(usa$Country)
+usa$Year <- factor(usa$Year)
+usa_year <- usa %>% group_by(Year) %>% summarise(Total = n())
+usa_medals <- usa %>% group_by(Medal) %>% summarise(Total = n())
+usa_gender <- usa %>% group_by(Gender) %>% summarise(Total = n())
+
+hchart(usa_year, "column", hcaes(Year, Total, color = Year)) %>% 
+  hc_add_series_labels_values(usa_medals$Medal, usa_medals$Total,
+                              colors = substr(terrain.colors(3), 0 , 7), type = "pie",
+                              center = c('22%', '30%'),
+                              size = 200, dataLabels = list(enabled = TRUE)) %>% 
+  hc_add_series_labels_values(usa_gender$Gender, usa_gender$Total,
+                              colors = substr(terrain.colors(2), 0 , 7), type = "pie",
+                              center = c('53%', '30%'),
+                              size = 200, dataLabels = list(enabled = TRUE)) %>% 
+  hc_add_theme(hc_theme_google()) %>%
+  hc_credits(enabled = TRUE, text = "Sources: IOC Research and Reference Service and published by The Guardian's Datablog", style = list(fontSize = "10px")) %>%
+  hc_title(text = "Medals Won by United States of America (1896 - 2012)") %>%
+  hc_subtitle(text = "Pie chart shows number of different medals won")
+
+```
+
+
+<br>
+
+* Interestingly the best game for USA was in 1904.
+* Second best is 1984 which looks a bit suspicious as there are no entries for 1980
+* American Athletes love GOLD
+* Nearly 50% of all the medals won by Americans are Gold.
+* Almost 75% of the medals are won by men
+* Silver is the second favorite of Americans.
+* It would be interesting to see what percentage of medals are won by Americans in each game.
+
+<br>
+
+
+```{r}
+
+usa_year$percentage <- usa_year$Total/by_year[-19,]$Total * 100
+
+hchart(usa_year, "column", hcaes(Year, percentage, color = Year)) %>%  
+  hc_add_theme(hc_theme_google()) %>%
+  hc_credits(enabled = TRUE, text = "Sources: IOC Research and Reference Service and published by The Guardian's Datablog", style = list(fontSize = "10px")) %>%
+  hc_title(text = "Percentage of Medals Won by United States of America in each Game (1896 - 2012)") 
+
+```
+
+<br>
+
+* 1904 Olympics was hosted by USA
+* Athletes from 12 countries competed and athletes from 10 countries had won the medals.
+* More than 80% of them were won by USA
+* America is consistently winning more than 12 percent of total medals in all the games.
+
+<br>
+
+
+```{r}
+
+sports <- summer %>% group_by(Year, Sport) %>% summarise(Total = n()) %>% group_by(Sport) %>% summarise(Total = n()) %>% arrange(desc(Total))
+
+hchart(by_sport, "column", hcaes(Sport, Total, color = Sport)) %>% 
+  hc_add_series_labels_values(sports$Sport, sports$Total,
+                              colors = substr(terrain.colors(43), 0 , 7), type = "pie",
+                              center = c('80%', '35%'),
+                              size = 150, dataLabels = list(enabled = TRUE)) %>% 
+  hc_add_theme(hc_theme_google()) %>%
+  hc_credits(enabled = TRUE, text = "Sources: IOC Research and Reference Service and published by The Guardian's Datablog", style = list(fontSize = "10px")) %>%
+  hc_title(text = "Medals Won in Summer Olympics (1896 - 2012) - By Sports") %>%
+  hc_subtitle(text = "Pie chart shows number of times sports was parts of the games")
+
+```
+
+<br>
+
+* Aquatics has the most medals won.
+* Athletics and Rowing coming in second and third.
+
+<br>
+
+```{r}
+
+by_sport <- by_sport %>% arrange(desc(Total)) %>% head(10)
+
+
+hchart(by_sport, "treemap", hcaes(x = Sport, value = Total, color = Total)) %>%
+  hc_colorAxis(stops = color_stops(n = 10, colors = c("#440154", "#21908C", "#FDE725"))) %>%
+  hc_title(text = "Top 10 Sports by Medals (1896-2012)") %>%
+  hc_add_theme(hc_theme_google()) %>%
+  hc_credits(enabled = TRUE, text = "Sources: IOC Research and Reference Service and published by The Guardian's Datablog", style = list(fontSize = "10px")) 
+
+
+```
+
+<br>
+
+### Top Olympic Athletes (1896-2012){.tabset}
+
+```{r}
+
+by_athlete <- summer %>% group_by(Athlete) %>% summarise(Total = n()) %>% arrange(desc(Total)) %>% head(10)
+by_men_athlete <- summer[summer$Gender=="Men",] %>% group_by(Athlete) %>% summarise(Total = n()) %>% arrange(desc(Total)) %>% head(10)
+by_women_athlete <- summer[summer$Gender=="Women",] %>% group_by(Athlete) %>% summarise(Total = n()) %>% arrange(desc(Total)) %>% head(10)
+
+all <- hchart(by_athlete, "treemap", hcaes(x = Athlete, value = Total, color = Total)) %>%
+  hc_colorAxis(stops = color_stops(n = 10, colors = c("#440154", "#21908C", "#FDE725"))) %>%
+  hc_title(text = "Top 10 Athletes (1896-2012)") %>%
+  hc_add_theme(hc_theme_google()) %>%
+  hc_credits(enabled = TRUE, text = "Sources: IOC Research and Reference Service and published by The Guardian's Datablog", style = list(fontSize = "10px")) 
+
+
+men <- hchart(by_men_athlete, "treemap", hcaes(x = Athlete, value = Total, color = Total)) %>%
+  hc_colorAxis(stops = color_stops(n = 10, colors = c("#440154", "#21908C", "#FDE725"))) %>%
+  hc_title(text = "Top 10 Athletes - Men (1896-2012)") %>%
+  hc_add_theme(hc_theme_google()) %>%
+  hc_credits(enabled = TRUE, text = "Sources: IOC Research and Reference Service and published by The Guardian's Datablog", style = list(fontSize = "10px")) 
+
+women <- hchart(by_women_athlete, "treemap", hcaes(x = Athlete, value = Total, color = Total)) %>%
+  hc_colorAxis(stops = color_stops(n = 10, colors = c("#440154", "#21908C", "#FDE725"))) %>%
+  hc_title(text = "Top 10 Athletes - Women (1896-2012)") %>%
+  hc_add_theme(hc_theme_google()) %>%
+  hc_credits(enabled = TRUE, text = "Sources: IOC Research and Reference Service and published by The Guardian's Datablog", style = list(fontSize = "10px")) 
+
+```
+
+
+#### All
+```{r}
+all
+```
+
+#### Men
+```{r}
+men
+```
+
+#### Women
+```{r}
+women
+```
+
+
+### References
+
+* https://www.olympic.org/ancient-olympic-games/history
+* http://www.history.com/topics/olympic-games
+* https://www.bloomberg.com/graphics/2016-olympics-usoc-return-on-investment/
+* http://www.teamusa.org/us-olympic-and-paralympic-foundation/team-usa-fund
+* https://en.wikipedia.org/wiki/1904_Summer_Olympics
