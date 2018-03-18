@@ -6,4 +6,4 @@ As part this analysis I am exploring Summer Olympics medals data and would like 
 * Which athletes have won the most medals at the Summer Olympic games?
 * Top 10 medal winning athletes
 
-The detailed report and be found [here](http://rpubs.com/nitishghosal/olympics) along with a [Tableau dashboard](https://public.tableau.com/profile/nitish.ghosal#!/vizhome/SummerOlympicsHistory_2/Dashboard).
+The detailed report can be found [here](http://rpubs.com/nitishghosal/olympics) along with a [Tableau dashboard](https://public.tableau.com/profile/nitish.ghosal#!/vizhome/SummerOlympicsHistory_2/Dashboard).
